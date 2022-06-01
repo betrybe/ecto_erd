@@ -78,8 +78,12 @@ defmodule Ecto.ERD.DBML do
         %Field{name: name, type: {:parameterized, Ecto.Enum, %{on_dump: on_dump}}} ->
           [{source, name, Map.values(on_dump)}]
 
-        _ ->
-          []
+        field ->
+          raise "#{field}"
+          # when the enum was created using ecto_enum lib
+          # https://github.com/gjaldon/ecto_enum which creates enum types on
+          # postgres
+          mapping_other_enum(source, field)
       end)
     end)
     |> Enum.group_by(fn {_source, name, _values} -> name end, fn {source, _name, values} ->
@@ -103,6 +107,22 @@ defmodule Ecto.ERD.DBML do
       end)
     end)
     |> Map.new()
+  end
+
+  defp mapping_other_enum(source, %Field{name: name, type: type_module}) do
+    with {:ok, behaviours} <- get_module_behaviours(type_module),
+         true <- Enum.member?(behaviours, Ecto.Type),
+         true <- function_exported?(type_module, :__enums__, 0) do
+      [{source, name, apply(type_module, :__enums__, [])}]
+    else
+      _ -> []
+    end
+  end
+
+  defp get_module_behaviours(module) do
+    module
+    |> apply(:__info__, [:attributes])
+    |> Keyword.fetch(:behaviour)
   end
 
   defp render_field(%Field{name: name, type: type, primary?: primary?}, enum_name_by_field_name) do
