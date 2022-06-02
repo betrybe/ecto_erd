@@ -80,7 +80,6 @@ defmodule Ecto.ERD.DBML do
 
         field ->
           # when the enum field uses ecto_enum lib https://github.com/gjaldon/ecto_enum
-          # which creates enum types on postgres
           case is_enum_module?(field.type) do
             true ->
               [{source, field.name, apply(field.type, :__enums__, [])}]
