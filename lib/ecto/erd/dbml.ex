@@ -82,7 +82,7 @@ defmodule Ecto.ERD.DBML do
           # when the enum field uses ecto_enum lib https://github.com/gjaldon/ecto_enum
           case is_enum_module?(type) do
             true ->
-              enum_name = enum_schema(type) <> name
+              enum_name = schema_prefix(type) <> name
 
               [{source, enum_name, apply(field.type, :__enums__, [])}]
 
@@ -131,9 +131,9 @@ defmodule Ecto.ERD.DBML do
     |> Keyword.fetch(:behaviour)
   end
 
-  defp enum_schema(module) do
+  defp schema_prefix(module) do
     if function_exported?(module, :schema, []) do
-      schema = apply(type, :schema, [])
+      schema = apply(module, :schema, [])
 
       if schema == "public", do: "", else: "#{schema}."
     else
