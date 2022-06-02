@@ -78,11 +78,13 @@ defmodule Ecto.ERD.DBML do
         %Field{name: name, type: {:parameterized, Ecto.Enum, %{on_dump: on_dump}}} ->
           [{source, name, Map.values(on_dump)}]
 
-        field ->
+        %Field{name: name, type: type} = field ->
           # when the enum field uses ecto_enum lib https://github.com/gjaldon/ecto_enum
-          case is_enum_module?(field.type) do
+          case is_enum_module?(type) do
             true ->
-              [{source, field.name, apply(field.type, :__enums__, [])}]
+              enum_name = enum_schema(type) <> name
+
+              [{source, enum_name, apply(field.type, :__enums__, [])}]
 
             false ->
               []
@@ -127,6 +129,16 @@ defmodule Ecto.ERD.DBML do
     module
     |> apply(:__info__, [:attributes])
     |> Keyword.fetch(:behaviour)
+  end
+
+  defp enum_schema(module) do
+    if function_exported?(module, :schema, []) do
+      schema = apply(type, :schema, [])
+
+      if schema == "public", do: "", else: "#{schema}."
+    else
+      ""
+    end
   end
 
   defp render_field(%Field{name: name, type: type, primary?: primary?}, enum_name_by_field_name) do
