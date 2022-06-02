@@ -79,10 +79,8 @@ defmodule Ecto.ERD.DBML do
           [{source, name, Map.values(on_dump)}]
 
         field ->
-          raise "#{field}"
-          # when the enum was created using ecto_enum lib
-          # https://github.com/gjaldon/ecto_enum which creates enum types on
-          # postgres
+          # when the enum field uses ecto_enum lib https://github.com/gjaldon/ecto_enum
+          # which creates enum types on postgres
           mapping_other_enum(source, field)
       end)
     end)

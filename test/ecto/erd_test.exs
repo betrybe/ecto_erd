@@ -2,6 +2,20 @@ defmodule Ecto.ERDTest do
   use ExUnit.Case
   alias Ecto.ERD.{DBML, Node, Field}
 
+  defmodule ProjectTypeEnum do
+    use Ecto.Type
+
+    def type, do: :string
+
+    def cast(value), do: {:ok, value}
+
+    def dump(value), do: {:ok, value}
+
+    def load(value), do: {:ok, value}
+
+    def __enums__, do: ~w(private public)
+  end
+
   test inspect(&DBML.enums_mapping/1) do
     result =
       [
@@ -49,7 +63,8 @@ defmodule Ecto.ERDTest do
             Field.new(%{
               name: :status,
               type: {:parameterized, Ecto.Enum, Ecto.Enum.init(values: [:live, :closed])}
-            })
+            }),
+            Field.new(%{name: :type, type: ProjectTypeEnum})
           ]
         }
       ]
@@ -60,6 +75,7 @@ defmodule Ecto.ERDTest do
              ["credentials", :flow] => {"flow", ["complex", "simple"]},
              ["invitations", :flow] => {"flow", ["complex", "simple"]},
              ["projects", :status] => {"projects_status", ["closed", "live"]},
+             ["projects", :type] => {"type", ["private", "public"]},
              ["users", :status] => {"users_status", ["active", "invited", "suspended"]}
            }
   end
