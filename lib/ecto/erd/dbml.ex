@@ -81,7 +81,13 @@ defmodule Ecto.ERD.DBML do
         field ->
           # when the enum field uses ecto_enum lib https://github.com/gjaldon/ecto_enum
           # which creates enum types on postgres
-          mapping_other_enum(source, field)
+          case is_enum_module?(field.type) do
+            true ->
+              [{source, field.name, apply(field.type, :__enums__, [])}]
+
+            false ->
+              []
+          end
       end)
     end)
     |> Enum.group_by(fn {_source, name, _values} -> name end, fn {source, _name, values} ->
@@ -107,13 +113,14 @@ defmodule Ecto.ERD.DBML do
     |> Map.new()
   end
 
-  defp mapping_other_enum(source, %Field{name: name, type: type_module}) do
-    with {:ok, behaviours} <- get_module_behaviours(type_module),
+  defp is_enum_module?(type) do
+    with true <- function_exported?(type, :__info__, 1),
+         {:ok, behaviours} <- get_module_behaviours(type),
          true <- Enum.member?(behaviours, Ecto.Type),
-         true <- function_exported?(type_module, :__enums__, 0) do
-      [{source, name, apply(type_module, :__enums__, [])}]
+         true <- function_exported?(type, :__enums__, 0) do
+      true
     else
-      _ -> []
+      _ -> false
     end
   end
 
