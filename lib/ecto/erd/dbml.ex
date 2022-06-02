@@ -78,13 +78,13 @@ defmodule Ecto.ERD.DBML do
         %Field{name: name, type: {:parameterized, Ecto.Enum, %{on_dump: on_dump}}} ->
           [{source, name, Map.values(on_dump)}]
 
-        %Field{name: name, type: type} = field ->
+        %Field{name: name, type: type} ->
           # when the enum field uses ecto_enum lib https://github.com/gjaldon/ecto_enum
           case is_enum_module?(type) do
             true ->
               enum_name = schema_prefix(type) <> name
 
-              [{source, enum_name, apply(field.type, :__enums__, [])}]
+              [{source, enum_name, apply(type, :__enums__, [])}]
 
             false ->
               []
