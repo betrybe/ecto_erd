@@ -78,8 +78,17 @@ defmodule Ecto.ERD.DBML do
         %Field{name: name, type: {:parameterized, Ecto.Enum, %{on_dump: on_dump}}} ->
           [{source, name, Map.values(on_dump)}]
 
-        _ ->
-          []
+        %Field{name: name, type: type} ->
+          # when the enum field uses ecto_enum lib https://github.com/gjaldon/ecto_enum
+          case is_enum_module?(type) do
+            true ->
+              enum_name = schema_prefix(type) <> name
+
+              [{source, enum_name, apply(type, :__enums__, [])}]
+
+            false ->
+              []
+          end
       end)
     end)
     |> Enum.group_by(fn {_source, name, _values} -> name end, fn {source, _name, values} ->
@@ -103,6 +112,33 @@ defmodule Ecto.ERD.DBML do
       end)
     end)
     |> Map.new()
+  end
+
+  defp is_enum_module?(type) do
+    with true <- function_exported?(type, :__info__, 1),
+         {:ok, behaviours} <- get_module_behaviours(type),
+         true <- Enum.member?(behaviours, Ecto.Type),
+         true <- function_exported?(type, :__enums__, 0) do
+      true
+    else
+      _ -> false
+    end
+  end
+
+  defp get_module_behaviours(module) do
+    module
+    |> apply(:__info__, [:attributes])
+    |> Keyword.fetch(:behaviour)
+  end
+
+  defp schema_prefix(module) do
+    if function_exported?(module, :schema, []) do
+      schema = apply(module, :schema, [])
+
+      if schema == "public", do: "", else: "#{schema}."
+    else
+      ""
+    end
   end
 
   defp render_field(%Field{name: name, type: type, primary?: primary?}, enum_name_by_field_name) do
